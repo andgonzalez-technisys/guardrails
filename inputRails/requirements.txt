@@ -1,0 +1,10 @@
+openai
+nemoguardrails
+transformers
+langchain
+langchain_openai
+requests
+annoy
+Pillow
+sentence_transformers
+pandas

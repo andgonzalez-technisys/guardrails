@@ -1,0 +1,31 @@
+define user ask get_balance
+    "Can you tell me my account balance?"
+    "I need to know my account balance."
+    "Can you provide me with my account balance?"
+    "I need to check my account balance for the past month."
+    "Can you tell me my account balance for account number 123456789123?"
+
+
+
+define flow get_balance
+    user ask get_balance
+    $account_number  = execute get_account(user_input = $last_user_message)
+
+    if $account_number == "unknown"
+        bot ask account_number
+        user ...
+        $account_number  = execute get_account(user_input = $last_user_message)
+
+    if $account_number == "unknown"
+        bot end_conversation
+        abort
+
+    $account_balance = execute get_balance(user_input = $last_user_message)
+    bot answer account_balance
+
+
+#999178081785
+
+
+
+

@@ -1,0 +1,72 @@
+define user ask create_transfer
+  "I want to transfer"
+  "I want to transfer"
+  "I want to transfer 100 from account 123456789123"
+  "I want to transfer 100 to account 123456789123"
+  "I want to transfer $100 to  account 123456789123"
+  "I want to transfer $100 from  account number"
+  "Can you help me transfer $100 to account"
+  "I'd like to send $100 to account number "
+  "I want to transfer $100 to account number 123456789123 from account number 123456789123"
+
+
+define bot ask transfer_account_number
+  "Please provide the account number you want to transfer to."
+  "Please give the account number you want to transfer to."
+
+
+
+define bot ask confirm transfer_details
+  "Do you want to transfer $amount to account number $transfer_account_number from account number $origin_account_number?"
+
+
+define flow transfer_full_details
+  user ask create_transfer
+
+  $origin_account_number = execute get_origin_account(user_input=$last_user_message)
+  $transfer_account_number = execute get_destination_account(user_input=$last_user_message)
+  $amount = execute get_amount(user_input=$last_user_message)
+
+  if $transfer_account_number == "unknown"
+    bot ask transfer_account_number
+    user ...
+    $transfer_account_number = execute get_account(user_input=$last_user_message)
+
+
+  if $amount == "unknown"
+    bot ask amount
+    user ...
+    $amount = execute get_amount(user_input=$last_user_message)
+
+
+  if $origin_account_number == "unknown"
+    bot ask origin_account_number
+    user ...
+    $origin_account_number = execute get_account(user_input=$last_user_message)
+
+
+  if $transfer_account_number == "unknown"
+    bot end_conversation
+    abort
+
+  if $amount == "unknown"
+    bot end_conversation
+    abort
+
+  if $origin_account_number == "unknown"
+    bot end_conversation
+    abort
+
+  bot express confirm transfer_details
+
+  user ...
+
+  $confirm = execute get_confirm(user_input=$last_user_message)
+
+  if $confirm == "no"
+    bot end_conversation
+    abort
+
+  $transaction_details = execute create_transfer_account(transferToAccountNo=$transfer_account_number,amount=$amount,accountNo=$origin_account_number)
+
+  bot answer $transaction_details

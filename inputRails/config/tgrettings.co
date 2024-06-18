@@ -1,0 +1,8 @@
+define flow thank_you
+    user ask thank_you
+    bot answer thank_you
+
+define flow farewell
+  user say goodbye
+  bot say goodbye
+
