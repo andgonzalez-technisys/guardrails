@@ -1,10 +1,7 @@
-openai
-nemoguardrails
-transformers
-langchain
-langchain_openai
-requests
-annoy
-Pillow
-sentence_transformers
-pandas
+openai==1.17.0
+nemoguardrails==0.8.2
+transformers==4.39.3
+langchain==0.1.15
+langchain-openai==0.1.2
+annoy==1.17.3
+sentence-transformers==2.6.1
