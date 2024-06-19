@@ -9,14 +9,43 @@ prompts:
 
   - task: extract_date
     models:
-      - openai/gpt-3.5-turbo
       - openai/gpt-4
     content: |-
-      Given the user input: "{{ user_input }}", extract any valid dates and normalize them to the format mm-dd-yyyy.
-      Handle different date formats, such as "Nov 1st 2023" or "2023-12-02", and always return the date in mm-dd-yyyy format.
-      If the year is not provided, assume the year is 2024.
-      If the input does not contain a clear date, return "unknown".
-      Only return the extracted date in the format mm-dd-yyyy without any additional text.
+      Given the user input: "{{ user_input }}", extract any dates and transform them into the format mm-dd-yyyy.
+
+      **Identify potential dates:**
+
+      1. Search for patterns matching three parts separated by separators (e.g., "/" or "-"). The first part should be a number between 1 and 12, the second part should be a number between 1 and 31, and the third part should be a four-digit number representing the year.
+
+      2. Additionally, consider two-part patterns where the first part is a textual month name (e.g., "November", "December") followed by a day number with an ordinal indicator (e.g., "1st", "2nd").
+
+      **Extract and format the date:**
+
+      - If a pattern is found in step 1, directly convert it to mm-dd-yyyy format.
+      - If a pattern is found in step 2, convert the month name to its corresponding numerical value (e.g., "November" -> "11") and combine it with the day number to form mm-dd format. Prepend the current year (2024) if no year is mentioned.
+
+      **Handle missing information:**
+
+      - If no pattern is found, return "unknown".
+
+      **Response format:**
+      `{{ extracted_date }}`
+
+
+      - Replace `{{ extracted_date }}` with the extracted date in mm-dd-yyyy format (or "unknown" if not found).
+
+
+      **Examples:**
+
+      - Input: Can I dispute a transaction from Nov 1st 2023? -> 11-01-2023
+      - Input: I need information about the transaction on 2023-12-02 -> 12-02-2023
+      - Input: The date of the transaction is 12/02/2023 -> 12-02-2023
+      - Input: Inquiry about a transaction from yesterday (17/06/2024) -> 17-06-2024
+      - Input: Show me details for the transaction on the 5th of next month -> unknown (as specific month and year are not provided)
+      - Input: I don't recall the date ->unknown
+
+
+
 
 
   - task: extract_account
@@ -78,84 +107,22 @@ prompts:
       - "Send $1000 to account number $account" -> $account
 
 
-  - task: extract_transfer_details
-    models:
-      - openai/gpt-3.5-turbo
-      - openai/gpt-4
-    content: |-
-      Given the user input: "{{ user_input }}", extract the origin account number, the destination account number, and the amount.
-      - The origin account number should be identified with phrases like "from account", "from my account", "from account number", "out of account", "transfer from account", "send from account", or "move from account".
-      - The destination account number should be identified with phrases like "to account", "to my account", "to account number", "into account", "deposit to account", "send to account", or "move to account".
-      - The amount should be identified by numbers prefixed or suffixed with symbols like $, USD, or words like "dollars".
-      If the input does not contain a valid origin account number, destination account number, or amount, respond with "unknown" for the missing value.
-      Only return the extracted details in the following order separated by pipes: origin account number|destination account number|amount.
-      Do not include any labels or additional text. Use the following examples as reference:
-
-      Examples (do not use these exact texts in your response):
-      - Input: I want to transfer $100 to account number 345678901234 from account number 456789012345
-        Output: 456789012345|345678901234|100
-      - Input: I want to send $100 from account number 456789012345 to account number 345678901234
-        Output: 456789012345|345678901234|100
-      - Input: Can you help me move $100 to account number 345678901234 from account number 456789012345?
-        Output: 456789012345|345678901234|100
-      - Input: I'd like to deposit $100 to account number 345678901234 from account number 456789012345
-        Output: 456789012345|345678901234|100
-      - Input: I want to transfer 50 dollars from my account 567890123456 to account 678901234567
-        Output: 567890123456|678901234567|50
-      - Input: Transfer $200 from 678901234567 to 789012345678
-        Output: 678901234567|789012345678|200
-      - Input: Move funds from account 678901234567 to account 789012345678
-        Output: 678901234567|789012345678|unknown
-      - Input: Send $50 to 890123456789
-        Output: unknown|890123456789|50
-      - Input: From 901234567890, transfer to 012345678901
-        Output: 901234567890|012345678901|unknown
-      - Input: Transfer $500
-        Output: unknown|unknown|500
-      - Input: Please send $125.30 to 234567890123 from account 345678901234
-        Output: 345678901234|234567890123|125.30
-      - Input: I want to transfer money from my account 456789012345
-        Output: 456789012345|unknown|unknown
-      - Input: I want to transfer money to account 567890123456
-        Output: unknown|567890123456|unknown
-      - Input: I want to transfer 50
-        Output: unknown|unknown|50
-      - Input: Transfer $100
-        Output: unknown|unknown|100
-      - Input: I want to transfer
-        Output: unknown|unknown|unknown
-
-
-
-
-
-
-
-
   - task: extract_amount
     models:
       - openai/gpt-4
     content: |-
-      Given the user input: "{{ user_input }}", extract a single amount in a valid numerical format, including integers and decimals.
-      Handle cases where the amount might be prefixed or suffixed with symbols like $, USD, or words like "dollars".
-      If the input does not contain a valid amount format, only respond with "unknown".
+      Given the user input: "{{ user_input }}", extract a single amount in a valid numerical format, including integers and decimals
       Only return the single extracted numerical value without any additional text or additional values.
+      When there is no amount specified in the given user input return "unknown".
 
-      Examples:
-      - Input: I want to transfer $100
-        Output: 100
-      - Input: I want to transfer 100 dollars
-        Output: 100
-      - Input: I want to transfer 100.50
-        Output: 100.50
-      - Input: I want to transfer money
-        Output: unknown
-      - Input: Please send 75.25 USD to my account
-        Output: 75.25
-      - Input: Transfer fifty dollars
-        Output: unknown
-      - Input: Send $30
-        Output: 30
+      **Examples:**
+      - I want to transfer $amount -> $amount
+      - I want to transfer $amount dollars -> $amount
+      - I want to transfer $amount -> $amount
+      - Please send $amount USD to my account -> $amount
+      - Transfer $amount dollars to my account -> $amount
+      - Send $amount to my account -> $amount
+
 
 
   - task: extract_confirm
@@ -164,32 +131,14 @@ prompts:
       - openai/gpt-4
     content: |-
       Given the user input: "{{ user_input }}", determine if the response is a confirmation, a negative response, or unknown.
-      If the input is a confirmation (e.g., "yes", "Yes", "y", "Y", "confirm", "Confirm", "sure", "Sure", "okay", "Okay", "alright", "Alright", "yes, I sure"), respond with "yes".
-      If the input is a negative response (e.g., "no", "No", "n", "N", "not sure", "Not sure", "don't think so", "Don't think so"), respond with "no".
+      If the input is a confirmation  respond with "yes".
+      If the input is a negative response  respond with "no".
       If the input is uncertain or cannot be determined, respond with "unknown".
-      Only return the extracted confirmation without any additional text. Examples: yes, no, unknown.
 
       Examples:
-      - Input: Yes, I sure
-        Output: yes
-      - Input: No, I don't think so
-        Output: no
-      - Input: Maybe, I am not sure
-        Output: unknown
-      - Input: Okay, let's do it
-        Output: yes
-      - Input: Not really
-        Output: no
-      - Input: Sure, go ahead
-        Output: yes
-      - Input: I don't know
-        Output: unknown
-      - Input: Confirm the transfer
-        Output: yes
-      - Input: Nope, I am not sure
-        Output: no
-      - Input: Alright, let's proceed
-        Output: yes
+      - Yes -> yes
+      - No -> no
+      - I am not sure -> unknown
 
   - task: generate_user_intent
     models:
