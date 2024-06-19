@@ -14,7 +14,7 @@ from typing import Optional
 import os
 import uuid
 from typing import Optional, Union
-
+import pdb
 
 
 @action()
@@ -85,26 +85,29 @@ async def get_transaction_by_date(date: str):
 
 
 @action()
-async def get_date_transaction(user_input: str, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
-
+async def get_date_transaction(user_input: str, llm_task_manager: LLMTaskManager, llm: Optional[BaseLLM] = None):
     prompt = llm_task_manager.render_task_prompt(
         task="extract_date",
         context={"user_input": user_input}
     )
 
-    with llm_params(llm, temperature=1.0,max_tokens=200):
-        extracted_date = await llm_call(llm, prompt )
+    with llm_params(llm, temperature=0.4, max_tokens=200):
+        extracted_date = await llm_call(llm, prompt)
 
-    print(f"Extracted date: {extracted_date}")
+    extracted_date = extracted_date.strip().strip('`').strip('"')
 
-    return extracted_date
+    if extracted_date:
+        print(f"Extracted date: {extracted_date}")
+        return extracted_date
+    else:
+        print("Extracted date: unknown")
+        return "unknown"
 
 
 @action()
 async def create_dispute_transaction(user_input: str, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
 
-
-    transaction_details = await lookup_transaction_by_date(user_input)
+    transaction_details = await get_transaction_by_date(user_input)
     if transaction_details:
         return f"Transaction details: {transaction_details}"
     else:
@@ -112,35 +115,50 @@ async def create_dispute_transaction(user_input: str, llm_task_manager: LLMTaskM
 
 
 @action()
-async def get_origin_account(user_input, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
-
+async def get_origin_account(user_input, llm_task_manager: LLMTaskManager, llm: Optional[BaseLLM] = None):
     prompt = llm_task_manager.render_task_prompt(
         task="extract_origin_account",
         context={"user_input": user_input}
     )
 
-    with llm_params(llm, temperature=0.7,max_tokens=200):
-        extract_origin_account = await llm_call(llm, prompt )
+    with llm_params(llm, temperature=0.7, max_tokens=500):
+        extract_origin_account = await llm_call(llm, prompt)
 
-    print(f"Extracted origin account: --{extract_origin_account.lower().strip()}--")
+     # Inicia el depurador aquí
+    #pdb.set_trace()
 
-    return extract_origin_account.lower().strip()
+    extracted_account = extract_origin_account.lower().strip()
+
+    account_pattern = re.compile(r"\$account\d*")
+
+    if account_pattern.search(extracted_account):
+        return "unknown"
+
+    print(f"Extracted origin account: --{extracted_account}--")
+    return extracted_account.lower().strip()
 
 
 @action()
-async def get_destination_account(user_input, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
+async def get_destination_account(user_input, llm_task_manager: LLMTaskManager, llm: Optional[BaseLLM] = None):
 
     prompt = llm_task_manager.render_task_prompt(
         task="extract_destination_account",
         context={"user_input": user_input}
     )
 
-    with llm_params(llm, temperature=0.7,max_tokens=200):
-        extract_destination_account = await llm_call(llm, prompt )
+    with llm_params(llm, temperature=1, max_tokens=500):
+        extract_destination_account = await llm_call(llm, prompt)
 
-    print(f"Extracted Destination account: --{extract_destination_account.lower().strip()}--")
+    extracted_account = extract_destination_account.lower().strip()
 
-    return extract_destination_account.lower().strip()
+    account_pattern = re.compile(r"\$account\d*")
+
+    if account_pattern.search(extracted_account):
+        return "unknown"
+
+    print(f"Extracted Destination account: --{extracted_account}--")
+    return extracted_account.lower().strip()
+
 
 @action()
 async def get_account(user_input, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
@@ -173,7 +191,7 @@ async def get_amount(user_input: str, llm_task_manager: LLMTaskManager, llm: Opt
     return extracted_amount.lower().strip()
 
 @action()
-async def get_balance(user_input, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
+async def get_balance(user_input, llm_task_manager: LLMTaskManager, llm: Optional[BaseLLM] = None):
 
     prompt = llm_task_manager.render_task_prompt(
         task="extract_account",
@@ -185,11 +203,6 @@ async def get_balance(user_input, llm_task_manager: LLMTaskManager,llm: Optional
 
     print(f"Extracted account: {extracted_account}")
 
-    validated_account = validate_account(extracted_account.strip())
-    if "Invalid account" in validated_account:
-        return validated_account
-
-
     url = "https://pintserv.perf.aws.gft/intserv/4.0/getBalance"
     headers = {
         "response-content-type": "json"
@@ -199,7 +212,7 @@ async def get_balance(user_input, llm_task_manager: LLMTaskManager,llm: Optional
         "apiTransKey": "galileotest",
         "providerId": "342",               # Hardcoded providerId
         "transactionId": "test-anupama",   # Hardcoded transactionId
-        "accountNo": validated_account
+        "accountNo": extracted_account
     }
 
     def format_balance_info(balance_info):
@@ -248,66 +261,6 @@ async def get_balance(user_input, llm_task_manager: LLMTaskManager,llm: Optional
             "balance_without_auths": 50000.08
         }
         return f"Account details:\n{format_balance_info(hardcoded_balance_info)}"
-
-
-
-@action()
-async def get_params(user_input, llm_task_manager: LLMTaskManager,llm: Optional[BaseLLM] = None):
-
-    prompt = llm_task_manager.render_task_prompt(
-        task="extract_transfer_details",
-        context={"user_input": user_input}
-    )
-
-    with llm_params(llm, temperature=0.7,max_tokens=200):
-        extract_transfer_details = await llm_call(llm, prompt )
-
-    print(f"Extracted extract_transfer_details: {extract_transfer_details}")
-
-    values_list = extract_transfer_details.split('|')
-
-    print(f"Values list: {values_list}")
-    return values_list
-
-
-@action()
-async def get_allparams(user_input, llm_task_manager: LLMTaskManager, llm: Optional[BaseLLM] = None):
-    # Extract origin account
-    prompt_origin = llm_task_manager.render_task_prompt(
-        task="extract_origin_account",
-        context={"user_input": user_input}
-    )
-    with llm_params(llm, temperature=0.2, max_tokens=200):
-        origin_account = await llm_call(llm, prompt_origin)
-
-    # Extract transfer account
-    prompt_transfer = llm_task_manager.render_task_prompt(
-        task="extract_transfer_account",
-        context={"user_input": user_input}
-    )
-    with llm_params(llm, temperature=0.2, max_tokens=200):
-        transfer_account = await llm_call(llm, prompt_transfer)
-
-    # Extract amount
-    prompt_amount = llm_task_manager.render_task_prompt(
-        task="extract_amount",
-        context={"user_input": user_input}
-    )
-    with llm_params(llm, temperature=0.2, max_tokens=200):
-        amount = await llm_call(llm, prompt_amount)
-
-    # Print the raw extracted details for debugging
-    print(f"Extracted origin account: {origin_account}")
-    print(f"Extracted transfer account: {transfer_account}")
-    print(f"Extracted amount: {amount}")
-
-    values_list = [origin_account.strip(), transfer_account.strip(), amount.strip()]
-
-    # Print the values list for debugging
-    print(f"Values list: {values_list}")
-
-    return values_list
-
 
 
 @action()
@@ -369,7 +322,7 @@ async def get_confirm(user_input, llm_task_manager: LLMTaskManager,llm: Optional
         task="extract_confirm",
         context={"user_input": user_input}
     )
-    print
+
     with llm_params(llm, temperature=1.0,max_tokens=200):
         extracted_confirm = await llm_call(llm, prompt )
 
@@ -392,8 +345,7 @@ def init(app: LLMRails):
     app.register_action(get_amount, "get_amount")
     app.register_action(create_transfer_account, "create_transfer_account")
     app.register_action(get_confirm, "get_confirm")
-    app.register_action(get_params, "get_params")
-    app.register_action(get_params, "get_allparams")
+
 
 
 
