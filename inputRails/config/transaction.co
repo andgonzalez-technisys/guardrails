@@ -2,12 +2,10 @@ define user ask transaction_history
   "I want to see my transaction history."
   "I need to check my transaction history."
 
-
 define flow transaction_history
   user ask transaction_history
   $transaction_history = execute get_transactions_history()
   bot answer $transaction_history
-
 
 define user ask create_dispute_transaction
   "can I dispute a transaction on Nov 1st, 2024?"
