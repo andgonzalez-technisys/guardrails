@@ -6,3 +6,5 @@ get-pip.py
 app/config/.cache/*
 app/config/.cache
 app/config/env/*
+.idx/
+app/config/__pycache__
