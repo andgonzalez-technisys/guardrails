@@ -1,0 +1,8 @@
+.cache
+.vscode
+env
+app/cache
+get-pip.py
+app/config/.cache/*
+app/config/.cache
+app/config/env/*

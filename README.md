@@ -7,8 +7,13 @@ nemoguardrails chat --config='<replace to you config folder>'
 
 and execute the run.sh to up chat server.
 
+** Create env ***
 
+virtualenv -p  python3.10  ./env 
+source ./env/bin/activate
 
 Run in:
 python --version
 Python 3.10.13
+
+
