@@ -9,20 +9,26 @@ define user ask create_transfer
   "I'd like to send $100 to account number "
   "I want to transfer $100 to account number 123456789123 from account number 123456789123"
 
-
-define bot ask transfer_account_number
-  "Please provide the account number you want to transfer to."
-  "Please give the account number you want to transfer to."
-
-
-
 define bot ask confirm transfer_details
   "Do you want to transfer $amount to account number $transfer_account_number from account number $origin_account_number?"
+
+define bot ask amount
+  "Please provide the amount you want to transfer."
+  "Please give the amount you want to transfer."
+
+define bot ask origin_account_number
+  "Please provide the account number you want to transfer from."
+  "Please give the account number you want to transfer from."
+
+define bot express confirm transfer_details
+  "You want to transfer $amount to account number $transfer_account_number from account number $origin_account_number. Is that correct?"
+
+define bot ask end_conversation
+  "Thank you for using our services. Have a great day!"
 
 
 define flow transfer_full_details
   user ask create_transfer
-
   $origin_account_number = execute get_origin_account(user_input=$last_user_message)
   $transfer_account_number = execute get_destination_account(user_input=$last_user_message)
   $amount = execute get_amount(user_input=$last_user_message)
@@ -32,41 +38,37 @@ define flow transfer_full_details
     user ...
     $transfer_account_number = execute get_account(user_input=$last_user_message)
 
-
   if $amount == "unknown"
     bot ask amount
     user ...
     $amount = execute get_amount(user_input=$last_user_message)
-
 
   if $origin_account_number == "unknown"
     bot ask origin_account_number
     user ...
     $origin_account_number = execute get_account(user_input=$last_user_message)
 
-
   if $transfer_account_number == "unknown"
-    bot end_conversation
+    bot ask end_conversation
     abort
 
   if $amount == "unknown"
-    bot end_conversation
+    bot ask end_conversation
     abort
 
   if $origin_account_number == "unknown"
-    bot end_conversation
+    bot ask end_conversation
     abort
 
+ # Express the transaction details to the user
   bot express confirm transfer_details
-
   user ...
 
   $confirm = execute get_confirm(user_input=$last_user_message)
 
   if $confirm == "no"
-    bot end_conversation
+    bot ask end_conversation
     abort
 
   $transaction_details = execute create_transfer_account(transferToAccountNo=$transfer_account_number,amount=$amount,accountNo=$origin_account_number)
-
   bot answer $transaction_details
