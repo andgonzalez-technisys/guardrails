@@ -24,7 +24,7 @@ define flow dispute_transaction
 
   if $transaction_date == "unknown"
     bot ask transaction_date
-    user give transaction_date
+    user ...
     $transaction_date = execute get_date_transaction(user_input = $last_user_message)
 
   if $transaction_date == "unknown"
@@ -33,12 +33,3 @@ define flow dispute_transaction
 
   $dispute_details = execute create_dispute_transaction(user_input = $transaction_date )
   bot answer $dispute_details
-
-
-
-
-
-
-
-
-
